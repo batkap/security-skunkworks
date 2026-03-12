@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["run_id", "repo_path", "status", "mode", "agent_tasks"],
+  "properties": {
+    "run_id": {"type": "string"},
+    "repo_path": {"type": "string"},
+    "status": {"type": "string"},
+    "mode": {"type": "string"},
+    "branch": {"type": "string"},
+    "agent_tasks": {
+      "type": "object"
+    },
+    "gated_findings": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "additionalProperties": true
+}
+

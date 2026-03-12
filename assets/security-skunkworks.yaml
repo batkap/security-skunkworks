@@ -1,0 +1,13 @@
+include_paths: []
+exclude_paths:
+  - .git
+  - node_modules
+compliance_frameworks:
+  - owasp
+  - asvs
+  - cwe
+primary_frameworks: []
+sensitive_paths: []
+docs_destination: docs/security
+gate_thresholds:
+  default: gated

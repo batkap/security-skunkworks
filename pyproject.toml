@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "security-skunkworks"
+version = "0.1.0"
+description = "Local-first repository security orchestration with a Codex skill and resumable run state."
+requires-python = ">=3.11"
+dependencies = [
+  "PyYAML>=6.0.2",
+]
+license = {text = "MIT"}
+authors = [
+  {name = "batkap"},
+]
+
+[project.scripts]
+security-skunkworks = "scripts.security_workflow:main"
+
+[tool.setuptools]
+packages = ["scripts"]
+

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Skunkworks"
+  short_description: "Orchestrate repo security reviews and fixes"
+  default_prompt: "Use $security-skunkworks to audit a local repo, generate security requirements, and coordinate fixes until only gated work remains."
