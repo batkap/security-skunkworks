@@ -1,14 +1,44 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["run_id", "repo_path", "mode", "created_at"],
+  "required": [
+    "run_id",
+    "repo_path",
+    "mode",
+    "created_at",
+    "status",
+    "allowed_write_scopes",
+    "coverage_status",
+    "effective_config",
+    "scanners"
+  ],
   "properties": {
     "run_id": {"type": "string"},
     "repo_path": {"type": "string"},
-    "mode": {"type": "string"},
+    "mode": {
+      "type": "string",
+      "enum": ["read-only", "docs-only", "low-risk"]
+    },
     "branch": {"type": "string"},
-    "created_at": {"type": "string"}
+    "created_at": {"type": "string"},
+    "status": {
+      "type": "string",
+      "enum": ["initialized", "inventory_complete", "analysis_complete", "report_ready", "blocked", "verified", "failed"]
+    },
+    "allowed_write_scopes": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "coverage_status": {
+      "type": "string",
+      "enum": ["full", "partial", "unsupported"]
+    },
+    "unsupported_items": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "effective_config": {"type": "object"},
+    "scanners": {"type": "object"}
   },
   "additionalProperties": true
 }
-

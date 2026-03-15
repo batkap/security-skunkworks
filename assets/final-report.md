@@ -3,16 +3,25 @@
 - Repository: `${repo_name}`
 - Mode: `${mode}`
 - Maturity: `${maturity}`
+- Coverage Status: `${coverage_status}`
+
+## Coverage Summary
+${coverage_summary}
+
+## Scanner Summary
+${scanner_summary}
+
+## Unsupported Or Reduced-Coverage Areas
+${unsupported_summary}
 
 ## Findings
 ${findings}
 
-## Low-Risk Changes
+## Low-Risk Follow-Up
 ${low_risk}
 
-## Gated Changes
+## Gated Work
 ${gated}
 
-## Follow-Up
+## Required Next Steps
 ${follow_up}
-

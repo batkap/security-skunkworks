@@ -1,6 +1,12 @@
 # Gate Policy
 
-Treat these as gated by default:
+## Default First Trusted Release
+
+- Default run mode is `read-only`.
+- The tool may write only `.security-skunkworks/` unless a non-default mode is requested explicitly.
+- Missing required scanners or unsupported stack elements reduce coverage and block verification.
+
+## Gated By Default
 
 - Authentication and authorization flow changes
 - Session behavior changes
@@ -8,11 +14,10 @@ Treat these as gated by default:
 - Secret rotation or credential replacement that affects runtime systems
 - IAM, Firestore rules, database privilege, or externally visible API behavior changes
 
-Treat these as low-risk by default:
+## Non-Gated Only When An Explicit Write Mode Allows It
 
-- Durable documentation
+- Durable documentation updates
 - Run workspace updates
 - Test additions
 - Additive CI security checks
 - Synthetic fixture cleanup
-

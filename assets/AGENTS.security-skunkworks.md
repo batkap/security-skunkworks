@@ -5,5 +5,5 @@
 - Active run: `${run_id}`
 - Agents must read `AGENTS.md`, `.security-skunkworks/repo-profile.md`, the shared ledger, and their role pack before making changes.
 - Agents must update `started_at`, `updated_at`, and `completed_at` before leaving work in a non-pending state.
+- Read-only runs must not change canonical repo files.
 - High-risk work stays gated until explicitly approved.
-

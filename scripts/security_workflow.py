@@ -316,6 +316,15 @@ def verify_command(args: argparse.Namespace) -> int:
     repo = Path(args.repo).resolve()
     ok, messages = verify_run(repo, args.run)
     if ok:
+        run_dir = repo / ".security-skunkworks" / "runs" / args.run
+        ledger_path = run_dir / "ledger.json"
+        manifest_path = run_dir / "run-manifest.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        ledger["status"] = RunStatus.VERIFIED.value
+        manifest["status"] = RunStatus.VERIFIED.value
+        write_json(ledger_path, ledger)
+        update_manifest(manifest_path, manifest)
         print(f"Verification passed for {args.run}")
         return 0
     print("\n".join(messages))

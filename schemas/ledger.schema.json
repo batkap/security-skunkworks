@@ -1,21 +1,58 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["run_id", "repo_path", "status", "mode", "agent_tasks"],
+  "required": [
+    "run_id",
+    "repo_path",
+    "status",
+    "mode",
+    "agent_tasks",
+    "coverage_status",
+    "allowed_write_scopes",
+    "effective_config",
+    "scanners"
+  ],
   "properties": {
     "run_id": {"type": "string"},
     "repo_path": {"type": "string"},
-    "status": {"type": "string"},
-    "mode": {"type": "string"},
+    "status": {
+      "type": "string",
+      "enum": ["initialized", "inventory_complete", "analysis_complete", "report_ready", "blocked", "verified", "failed"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["read-only", "docs-only", "low-risk"]
+    },
     "branch": {"type": "string"},
+    "coverage_status": {
+      "type": "string",
+      "enum": ["full", "partial", "unsupported"]
+    },
     "agent_tasks": {
       "type": "object"
     },
     "gated_findings": {
       "type": "array",
       "items": {"type": "string"}
+    },
+    "allowed_write_scopes": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "unsupported_items": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "coverage_summary": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "effective_config": {
+      "type": "object"
+    },
+    "scanners": {
+      "type": "object"
     }
   },
   "additionalProperties": true
 }
-

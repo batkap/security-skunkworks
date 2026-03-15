@@ -1,29 +1,41 @@
 # security-skunkworks
 
-Local-first repository security orchestration for existing frontend, backend, and web/API repositories.
+Local-first repository security orchestration for existing JS/TS and Python frontend, backend, and web/API repos.
 
-It scans a local repo, derives findings and threats, turns those into security requirements and compliance mappings, writes resumable run state under `.security-skunkworks/`, updates durable docs, and produces a final report plus a detailed fixation plan.
+## Current Trust Model
 
-## What It Does
+`security-skunkworks` is now a read-only-first security pilot.
 
-- Inventories repo shape, maturity, CI, container, and security artifacts
-- Detects common high-signal issues such as tracked secrets and broad Firestore rules
-- Derives threat inputs and generates security requirements, acceptance criteria, and test cases
-- Writes agent task packs for `coordinator`, `reviewer`, `fixer`, `tester`, `docs`, and `compliance`
-- Updates `README.md`, `AGENTS.md`, `SECURITY.md`, and `docs/security/*` in the target repo
-- Produces a final report, compliance matrix, threat traceability matrix, and detailed fixation plan
+- Default mode: `read-only`
+- Default write scope: `.security-skunkworks/` only
+- Verification is allowed to pass only when required scanners ran successfully and coverage is `full`
+- Use copied repos first before trusting results on production-bound work
 
-## Supported Targets
+## First Trusted Release Scope
 
-First-class in v1:
+Supported now:
 
-- JS/TS frontend and web/API repos
-- Python web/API repos
-- CI, Docker, config, and repo-doc surfaces around those repos
+- JavaScript and TypeScript repos using `npm` or `pnpm`
+- Python repos using `pip` or `setuptools`
+- CI and container surfaces around those repos
 
-Secondary:
+Reduced coverage:
 
-- Firebase/Flutter and other mixed-stack repos
+- `yarn`, `bun`, and `poetry`
+- Repos without first-class JS/TS or Python sources
+- Mixed repos where unsupported areas affect the trust boundary
+
+## Required Scanners
+
+Install the scanners needed for the repo you are analyzing:
+
+- `semgrep`
+- `gitleaks`
+- `npm audit` through a working `npm` install for JS/TS repos
+- `pip-audit` for Python repos
+- `trivy` when Dockerfiles or other container assets are present
+
+If a required scanner is missing or fails, the run will stay `blocked` and `verify` will fail.
 
 ## Install
 
@@ -41,108 +53,133 @@ cd security-skunkworks
 python3 -m pip install -e .
 ```
 
-## Optional Config
-
-Create `security-skunkworks.yaml` in the target repo if you want to override defaults.
-
-Start from:
-
-```bash
-cp /path/to/security-skunkworks/assets/security-skunkworks.yaml /path/to/target/security-skunkworks.yaml
-```
-
 ## Start To Finish
 
-1. Initialize the target repo.
+1. Work on a copied target repo.
 
 ```bash
-security-skunkworks init-target --repo /path/to/target
+cp -R /path/to/real-repo /tmp/real-repo-copy
 ```
 
-This creates `.security-skunkworks/`, initializes run state, and writes baseline durable docs if they do not exist.
-
-2. Run the full workflow.
+2. Initialize the target.
 
 ```bash
-security-skunkworks run --repo /path/to/target
+security-skunkworks init-target --repo /tmp/real-repo-copy
 ```
 
-This inventories the repo, classifies `bootstrap` or `improve` mode, generates findings, threats, requirements, compliance outputs, agent packs, and the fixation plan.
+3. Run the default read-only workflow.
 
-3. Inspect the active run directory.
+```bash
+security-skunkworks run --repo /tmp/real-repo-copy
+```
+
+4. Inspect the generated run workspace.
 
 ```text
-/path/to/target/.security-skunkworks/runs/<run-id>/
+/tmp/real-repo-copy/.security-skunkworks/runs/<run-id>/
 ```
 
-Key files:
+Key outputs:
 
 - `run-manifest.json`
 - `ledger.json`
-- `agents/*.md`
 - `findings/findings.json`
 - `threats/threat-model.json`
 - `requirements/requirements.json`
 - `plans/fixation-plan.md`
 - `reports/final-report.md`
+- `reports/compliance-matrix.md`
+- `reports/traceability-matrix.md`
 
-4. Resume a paused run.
-
-```bash
-security-skunkworks resume --repo /path/to/target --run <run-id>
-```
-
-This shows unfinished or blocked agent roles from the shared ledger.
-
-5. Read the final report.
+5. Print the final report.
 
 ```bash
-security-skunkworks report --repo /path/to/target --run <run-id>
+security-skunkworks report --repo /tmp/real-repo-copy --run <run-id>
 ```
 
-6. Verify before closing the run.
+6. Verify the run.
 
 ```bash
-security-skunkworks verify --repo /path/to/target --run <run-id>
+security-skunkworks verify --repo /tmp/real-repo-copy --run <run-id>
 ```
 
-This checks ledger and agent-pack consistency and runs detected repo-native test commands when available.
+`verify` should pass only when:
 
-## What Gets Written To The Target Repo
+- the run status is `report_ready` or `verified`
+- scanner coverage is `full`
+- no gated findings remain
+- the ledger and agent packs agree
+- repo-native test commands pass
 
-- `.security-skunkworks/`
-- `README.md`
-- `AGENTS.md`
-- `SECURITY.md`
-- `docs/security/security-architecture.md`
-- `docs/security/security-requirements.md`
-- `docs/security/security-test-plan.md`
-- `docs/security/compliance-matrix.md`
-- `docs/security/security-review.md`
+7. Resume if you need to inspect unfinished work.
 
-## Gate Model
+```bash
+security-skunkworks resume --repo /tmp/real-repo-copy --run <run-id>
+```
 
-Low-risk work is applied continuously. High-risk work is surfaced and stopped behind explicit gates.
+## Optional Modes
 
-Gated by default:
+Read-only is the safe default.
 
-- Authentication and authorization flow changes
-- Session behavior changes
-- Cryptography changes
-- Secret rotation affecting runtime systems
-- IAM, Firestore, database privilege, or externally visible API behavior changes
+- `--mode docs-only`: allow canonical security doc updates
+- `--mode low-risk`: allow canonical docs and other low-risk repo-local changes
 
-## Validation
+Example:
 
-Run the local test suite:
+```bash
+security-skunkworks run --repo /tmp/real-repo-copy --mode docs-only
+```
+
+## Config
+
+Place `security-skunkworks.yaml` at the target repo root to override defaults.
+
+Start from the bundled template:
+
+```bash
+cp /path/to/security-skunkworks/assets/security-skunkworks.yaml /tmp/real-repo-copy/security-skunkworks.yaml
+```
+
+Implemented config fields:
+
+- `default_mode`
+- `include_paths`
+- `exclude_paths`
+- `compliance_frameworks`
+- `primary_frameworks`
+- `sensitive_paths`
+- `docs_destination`
+- `gate_thresholds`
+- `required_scanners`
+
+Unknown config keys fail fast.
+
+## Status Meanings
+
+- `report_ready`: full coverage and no gated findings remain
+- `blocked`: coverage is partial or unsupported, or gated findings remain
+- `verified`: `verify` passed for the run
+- `failed`: orchestration or validation failed
+
+## Repo Validation
+
+Run the test suite:
 
 ```bash
 python3 -m unittest discover -s tests
 ```
 
-Validate the embedded skill:
+Validate the embedded skill through the repo wrapper:
 
 ```bash
-python3 /Users/batu/.codex/skills/.system/skill-creator/scripts/quick_validate.py /path/to/security-skunkworks
+python3 scripts/validate_skill.py
 ```
 
+## References
+
+- [references/gate-policy.md](references/gate-policy.md)
+- [references/scanner-prerequisites.md](references/scanner-prerequisites.md)
+- [references/support-matrix.md](references/support-matrix.md)
+- [references/copied-repo-pilot.md](references/copied-repo-pilot.md)
+- [references/js-ts-playbook.md](references/js-ts-playbook.md)
+- [references/python-playbook.md](references/python-playbook.md)

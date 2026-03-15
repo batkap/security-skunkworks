@@ -1,7 +1,13 @@
+default_mode: read-only
 include_paths: []
 exclude_paths:
   - .git
   - node_modules
+  - .venv
+  - venv
+  - __pycache__
+  - dist
+  - build
 compliance_frameworks:
   - owasp
   - asvs
@@ -11,3 +17,18 @@ sensitive_paths: []
 docs_destination: docs/security
 gate_thresholds:
   default: gated
+required_scanners:
+  javascript:
+    - semgrep
+    - gitleaks
+    - npm-audit
+  typescript:
+    - semgrep
+    - gitleaks
+    - npm-audit
+  python:
+    - semgrep
+    - gitleaks
+    - pip-audit
+  containers:
+    - trivy

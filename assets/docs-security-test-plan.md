@@ -9,5 +9,5 @@ ${low_risk}
 
 - Re-run repo-native tests
 - Re-run security-skunkworks verification
+- Confirm required scanner coverage is full
 - Review gated findings before closeout
-

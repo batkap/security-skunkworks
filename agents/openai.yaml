@@ -1,4 +1,4 @@
 interface:
   display_name: "Security Skunkworks"
-  short_description: "Orchestrate repo security reviews and fixes"
-  default_prompt: "Use $security-skunkworks to audit a local repo, generate security requirements, and coordinate fixes until only gated work remains."
+  short_description: "Run read-only-first repo security orchestration with reports and requirement extraction"
+  default_prompt: "Use $security-skunkworks to audit a local repo in read-only mode, generate findings, threats, requirements, and a fixation plan, and only treat the run as complete when required scanner coverage is full."

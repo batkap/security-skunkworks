@@ -12,5 +12,4 @@ The latest durable security run artifacts live under `.security-skunkworks/runs/
 
 ## Scope
 
-This repository tracks threat models, security requirements, compliance mappings, and review outputs under `docs/security/`.
-
+This repository tracks threat models, security requirements, compliance mappings, and review outputs under `.security-skunkworks/` by default, and under `docs/security/` only when an explicit write mode allows canonical doc updates.

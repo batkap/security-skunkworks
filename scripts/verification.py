@@ -73,8 +73,8 @@ def verify_run(repo: Path, run_id: str) -> Tuple[bool, List[str]]:
     coordinator = ledger.get("agent_tasks", {}).get("coordinator", {})
     if coordinator.get("status") != "completed":
         messages.append("Coordinator task must be completed before verify can pass")
-    if ledger.get("status") != "report_ready":
-        messages.append(f"Run status must be report_ready for verification, found {ledger.get('status')}")
+    if ledger.get("status") not in {"report_ready", "verified"}:
+        messages.append(f"Run status must be report_ready or verified for verification, found {ledger.get('status')}")
     if ledger.get("gated_findings"):
         messages.append("Run still contains gated findings")
     if ledger.get("coverage_status") != "full":

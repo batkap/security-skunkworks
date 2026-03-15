@@ -1,17 +1,40 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["id", "title", "severity", "category", "description", "evidence_path", "gate"],
+  "required": [
+    "id",
+    "title",
+    "severity",
+    "category",
+    "description",
+    "evidence_path",
+    "gate",
+    "source",
+    "rule_id",
+    "surface",
+    "dedupe_key",
+    "coverage"
+  ],
   "properties": {
     "id": {"type": "string"},
     "title": {"type": "string"},
-    "severity": {"type": "string"},
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low"]
+    },
     "category": {"type": "string"},
     "description": {"type": "string"},
     "evidence_path": {"type": "string"},
     "gate": {"type": "string"},
-    "confidence": {"type": "number"}
+    "confidence": {"type": "number"},
+    "source": {"type": "string"},
+    "rule_id": {"type": "string"},
+    "surface": {"type": "string"},
+    "dedupe_key": {"type": "string"},
+    "coverage": {
+      "type": "string",
+      "enum": ["full", "partial", "unsupported"]
+    }
   },
   "additionalProperties": true
 }
-
