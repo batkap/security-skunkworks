@@ -56,6 +56,37 @@ class ComplianceFramework(str, Enum):
     ASVS = "asvs"
 
 
+class RunMode(str, Enum):
+    READ_ONLY = "read-only"
+    DOCS_ONLY = "docs-only"
+    LOW_RISK = "low-risk"
+
+
+class RunStatus(str, Enum):
+    INITIALIZED = "initialized"
+    INVENTORY_COMPLETE = "inventory_complete"
+    ANALYSIS_COMPLETE = "analysis_complete"
+    REPORT_READY = "report_ready"
+    BLOCKED = "blocked"
+    VERIFIED = "verified"
+    FAILED = "failed"
+
+
+class AgentStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    BLOCKED = "blocked"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class CoverageStatus(str, Enum):
+    FULL = "full"
+    PARTIAL = "partial"
+    UNSUPPORTED = "unsupported"
+
+
 @dataclass
 class RepoProfile:
     repo_name: str
@@ -68,6 +99,9 @@ class RepoProfile:
     evidence: List[str]
     maturity: str
     mode: str
+    package_managers: List[str] = field(default_factory=list)
+    supported: bool = True
+    unsupported_items: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, object]:
         return asdict(self)
@@ -84,6 +118,11 @@ class Finding:
     evidence_path: str
     gate: str
     recommendation: str
+    source: str = "builtin"
+    rule_id: str = ""
+    surface: str = "repo"
+    dedupe_key: str = ""
+    coverage: str = CoverageStatus.FULL.value
 
     def to_dict(self) -> Dict[str, object]:
         data = asdict(self)
@@ -161,12 +200,7 @@ class SecurityRequirement:
             "**Acceptance Criteria:**",
         ]
         lines.extend(f"- [ ] {item}" for item in self.acceptance_criteria or ["TBD"])
-        lines.extend(
-            [
-                "",
-                "**Security Test Cases:**",
-            ]
-        )
+        lines.extend(["", "**Security Test Cases:**"])
         lines.extend(f"- {item}" for item in self.test_cases or ["TBD"])
         lines.extend(
             [
@@ -241,14 +275,16 @@ class AgentTask:
     dependencies: List[str]
     owned_paths: List[str]
     commands: List[str]
-    status: str = "pending"
+    status: AgentStatus = AgentStatus.PENDING
     owner: str = "unassigned"
     started_at: str = ""
     updated_at: str = ""
     completed_at: str = ""
 
     def to_dict(self) -> Dict[str, object]:
-        return asdict(self)
+        data = asdict(self)
+        data["status"] = self.status.value
+        return data
 
 
 @dataclass
@@ -262,21 +298,47 @@ class FixationPlan:
 
 
 @dataclass
+class ScannerResult:
+    name: str
+    required: bool
+    available: bool
+    executed: bool = False
+    success: bool = False
+    command: List[str] = field(default_factory=list)
+    output_path: str = ""
+    coverage_gap: str = ""
+    error: str = ""
+    findings: List[Dict[str, object]] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, object]:
+        return asdict(self)
+
+
+@dataclass
 class RunLedger:
     run_id: str
     repo_path: str
-    status: str
-    mode: str
+    status: RunStatus
+    mode: RunMode
     branch: str
     created_at: str = field(default_factory=utc_now)
     updated_at: str = field(default_factory=utc_now)
     findings: List[Dict[str, object]] = field(default_factory=list)
     agent_tasks: Dict[str, Dict[str, object]] = field(default_factory=dict)
     gated_findings: List[str] = field(default_factory=list)
+    coverage_status: CoverageStatus = CoverageStatus.PARTIAL
+    scanners: Dict[str, Dict[str, object]] = field(default_factory=dict)
+    allowed_write_scopes: List[str] = field(default_factory=list)
+    unsupported_items: List[str] = field(default_factory=list)
+    coverage_summary: List[str] = field(default_factory=list)
+    effective_config: Dict[str, object] = field(default_factory=dict)
 
     def touch(self) -> None:
         self.updated_at = utc_now()
 
     def to_dict(self) -> Dict[str, object]:
-        return asdict(self)
-
+        data = asdict(self)
+        data["status"] = self.status.value
+        data["mode"] = self.mode.value
+        data["coverage_status"] = self.coverage_status.value
+        return data
