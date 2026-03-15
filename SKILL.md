@@ -7,7 +7,7 @@ description: Local-first repository security orchestration for JS/TS and Python 
 
 ## Overview
 
-Run a resumable security workflow against a local repository. Default to `read-only` mode and treat `.security-skunkworks/` as the only writable target-repo surface unless a non-default mode is explicitly requested.
+Run a resumable security workflow against a local repository. Default to `read-only` mode and treat `.security-skunkworks/` as the only writable target-repo surface. Do not create or switch git branches unless branch creation is explicitly requested.
 
 ## Workflow
 
@@ -20,6 +20,7 @@ Run a resumable security workflow against a local repository. Default to `read-o
 ## Decision Rules
 
 - Default mode is `read-only`.
+- Default branch behavior is no branch creation or branch switching.
 - Required scanners must be present for supported repos. Missing or failed scanners reduce coverage and block verification.
 - Treat authentication, authorization, session, cryptography, secret rotation, IAM, Firestore rules, database privilege, and externally visible behavior changes as gated.
 - Preserve stronger existing controls. Do not replace established security patterns unless the run evidence shows a specific regression or a gated redesign is approved.
@@ -50,5 +51,5 @@ Reduced coverage:
 ## Outputs
 
 - Keep active run state under `.security-skunkworks/`.
-- In default mode, do not write canonical repo files.
+- In default mode, do not write canonical repo files and do not create git branches.
 - Produce a final report, compliance matrix, threat traceability matrix, and detailed fixation plan before closing the run.

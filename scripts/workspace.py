@@ -103,9 +103,9 @@ def create_workspace(
     profile: RepoProfile,
     mode: RunMode,
     effective_config: Dict[str, object],
-    create_branch: bool = True,
+    create_branch: bool = False,
 ) -> Dict[str, object]:
-    branch = detect_git_branch(repo, run_id) if create_branch else ""
+    branch = detect_git_branch(repo, run_id) if create_branch and mode != RunMode.READ_ONLY else ""
     workspace = repo / ".security-skunkworks"
     run_dir = workspace / "runs" / run_id
     for subdir in ("agents", "findings", "threats", "requirements", "plans", "reports"):

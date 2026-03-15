@@ -8,6 +8,7 @@ Local-first repository security orchestration for existing JS/TS and Python fron
 
 - Default mode: `read-only`
 - Default write scope: `.security-skunkworks/` only
+- Default branch behavior: no branch creation or branch switching
 - Verification is allowed to pass only when required scanners ran successfully and coverage is `full`
 - Use copied repos first before trusting results on production-bound work
 
@@ -31,7 +32,8 @@ Install the scanners needed for the repo you are analyzing:
 
 - `semgrep`
 - `gitleaks`
-- `npm audit` through a working `npm` install for JS/TS repos
+- `npm audit` for `npm` repos
+- `pnpm audit` for `pnpm` repos
 - `pip-audit` for Python repos
 - `trivy` when Dockerfiles or other container assets are present
 
@@ -71,6 +73,12 @@ security-skunkworks init-target --repo /tmp/real-repo-copy
 
 ```bash
 security-skunkworks run --repo /tmp/real-repo-copy
+```
+
+If you explicitly want branch hygiene for a later non-read-only run:
+
+```bash
+security-skunkworks init-target --repo /tmp/real-repo-copy --create-branch
 ```
 
 4. Inspect the generated run workspace.
@@ -117,19 +125,6 @@ security-skunkworks verify --repo /tmp/real-repo-copy --run <run-id>
 security-skunkworks resume --repo /tmp/real-repo-copy --run <run-id>
 ```
 
-## Optional Modes
-
-Read-only is the safe default.
-
-- `--mode docs-only`: allow canonical security doc updates
-- `--mode low-risk`: allow canonical docs and other low-risk repo-local changes
-
-Example:
-
-```bash
-security-skunkworks run --repo /tmp/real-repo-copy --mode docs-only
-```
-
 ## Config
 
 Place `security-skunkworks.yaml` at the target repo root to override defaults.
@@ -169,7 +164,7 @@ Run the test suite:
 python3 -m unittest discover -s tests
 ```
 
-Validate the embedded skill through the repo wrapper:
+Validate the embedded skill through the repo wrapper when the Codex skill validator is available on the machine:
 
 ```bash
 python3 scripts/validate_skill.py

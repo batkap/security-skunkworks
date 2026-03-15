@@ -1,109 +1,104 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-import textwrap
 import unittest
+
+from support import initialize_git_repo, install_fake_scanners
 
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests" / "fixtures"
 
 
-def fake_scanner_bin(bin_dir: Path, name: str, body: str) -> None:
-    path = bin_dir / name
-    path.write_text(body.lstrip(), encoding="utf-8")
-    path.chmod(0o755)
-
-
 class CliTests(unittest.TestCase):
-    def test_run_creates_read_only_workspace_without_canonical_docs(self) -> None:
+    def test_run_default_path_does_not_create_branch(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Path(tmpdir) / "fixture"
             shutil.copytree(FIXTURES / "js-api", repo)
+            initialize_git_repo(repo)
+            before = subprocess.run(
+                ["git", "branch", "--show-current"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
             result = subprocess.run(
-                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo), "--no-branch"],
+                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            after = subprocess.run(
+                ["git", "branch", "--show-current"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            branches = subprocess.run(
+                ["git", "branch", "--list", "security-skunkworks/*"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            self.assertEqual(before, "main")
+            self.assertEqual(after, "main")
+            self.assertEqual(branches, "")
             self.assertTrue((repo / ".security-skunkworks").exists())
             self.assertFalse((repo / "SECURITY.md").exists())
             self.assertFalse((repo / "AGENTS.md").exists())
-            ledger_path = next((repo / ".security-skunkworks" / "runs").iterdir()) / "ledger.json"
-            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
-            self.assertEqual(ledger["mode"], "read-only")
-            self.assertEqual(ledger["status"], "blocked")
-            self.assertEqual(ledger["allowed_write_scopes"], [".security-skunkworks"])
-            self.assertEqual(ledger["coverage_status"], "partial")
 
-    def test_run_can_reach_report_ready_with_fake_scanners(self) -> None:
+    def test_init_target_can_create_branch_when_explicitly_requested(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Path(tmpdir) / "fixture"
+            shutil.copytree(FIXTURES / "js-api-safe", repo)
+            initialize_git_repo(repo)
+            result = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "scripts.security_workflow",
+                    "init-target",
+                    "--repo",
+                    str(repo),
+                    "--mode",
+                    "docs-only",
+                    "--create-branch",
+                    "--run",
+                    "branch-run",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            current = subprocess.run(
+                ["git", "branch", "--show-current"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            self.assertEqual(current, "security-skunkworks/branch-run")
+
+    def test_run_can_reach_report_ready_with_fake_npm_scanners(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Path(tmpdir) / "fixture"
             shutil.copytree(FIXTURES / "js-api-safe", repo)
             fake_bin = Path(tmpdir) / "bin"
             fake_bin.mkdir()
-            fake_scanner_bin(
-                fake_bin,
-                "semgrep",
-                textwrap.dedent(
-                    """\
-                    #!/bin/sh
-                    while [ "$#" -gt 0 ]; do
-                      if [ "$1" = "--output" ]; then
-                        shift
-                        printf '{"results":[]}\n' > "$1"
-                      fi
-                      shift
-                    done
-                    exit 0
-                    """
-                ),
-            )
-            fake_scanner_bin(
-                fake_bin,
-                "gitleaks",
-                textwrap.dedent(
-                    """\
-                    #!/bin/sh
-                    while [ "$#" -gt 0 ]; do
-                      if [ "$1" = "--report-path" ]; then
-                        shift
-                        printf '[]\n' > "$1"
-                      fi
-                      shift
-                    done
-                    exit 0
-                    """
-                ),
-            )
-            fake_scanner_bin(
-                fake_bin,
-                "npm",
-                textwrap.dedent(
-                    """\
-                    #!/bin/sh
-                    if [ "$1" = "audit" ]; then
-                      printf '{"auditReportVersion":2,"vulnerabilities":{}}\n'
-                      exit 0
-                    fi
-                    if [ "$1" = "test" ]; then
-                      exit 0
-                    fi
-                    exit 0
-                    """
-                ),
-            )
-            env = dict(os.environ)
-            env["PATH"] = f"{fake_bin}:{env['PATH']}"
+            env = install_fake_scanners(fake_bin, package_manager="npm")
             result = subprocess.run(
-                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo), "--no-branch"],
+                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo), "--run", "fixture-run"],
                 cwd=ROOT,
                 env=env,
                 capture_output=True,
@@ -111,12 +106,12 @@ class CliTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            run_dir = next((repo / ".security-skunkworks" / "runs").iterdir())
+            run_dir = repo / ".security-skunkworks" / "runs" / "fixture-run"
             ledger = json.loads((run_dir / "ledger.json").read_text(encoding="utf-8"))
             self.assertEqual(ledger["status"], "report_ready")
             self.assertEqual(ledger["coverage_status"], "full")
             verify = subprocess.run(
-                ["python3", "-m", "scripts.security_workflow", "verify", "--repo", str(repo), "--run", run_dir.name],
+                ["python3", "-m", "scripts.security_workflow", "verify", "--repo", str(repo), "--run", "fixture-run"],
                 cwd=ROOT,
                 env=env,
                 capture_output=True,
@@ -125,12 +120,34 @@ class CliTests(unittest.TestCase):
             )
             self.assertEqual(verify.returncode, 0, verify.stdout + verify.stderr)
 
+    def test_run_can_reach_report_ready_with_fake_pnpm_scanners(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Path(tmpdir) / "fixture"
+            shutil.copytree(FIXTURES / "js-api-pnpm", repo)
+            fake_bin = Path(tmpdir) / "bin"
+            fake_bin.mkdir()
+            env = install_fake_scanners(fake_bin, package_manager="pnpm")
+            result = subprocess.run(
+                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo), "--run", "fixture-pnpm"],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            run_dir = repo / ".security-skunkworks" / "runs" / "fixture-pnpm"
+            ledger = json.loads((run_dir / "ledger.json").read_text(encoding="utf-8"))
+            self.assertEqual(ledger["status"], "report_ready")
+            self.assertEqual(ledger["coverage_status"], "full")
+            self.assertIn("pnpm-audit", ledger["scanners"])
+
     def test_verify_fails_for_blocked_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo = Path(tmpdir) / "fixture"
             shutil.copytree(FIXTURES / "js-api", repo)
             run = subprocess.run(
-                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo), "--no-branch"],
+                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,

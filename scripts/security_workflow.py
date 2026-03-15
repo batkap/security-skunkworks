@@ -157,7 +157,7 @@ def run_command(args: argparse.Namespace) -> int:
     mode = resolve_mode(config, args.mode)
     profile = build_repo_profile(repo, config=config)
     run_id = args.run or derive_run_id()
-    paths = create_workspace(repo, run_id, profile, mode, config, create_branch=not args.no_branch)
+    paths = create_workspace(repo, run_id, profile, mode, config, create_branch=args.create_branch)
     manifest_path = paths["run_dir"] / "run-manifest.json"
     builtin_findings = findings_for_repo(repo, config=config)
     scanner_results = run_scanners(repo, profile, config, paths["run_dir"] / "findings" / "scanners", run_id)
@@ -262,7 +262,7 @@ def init_target(args: argparse.Namespace) -> int:
     mode = resolve_mode(config, args.mode)
     profile = build_repo_profile(repo, config=config)
     run_id = args.run or derive_run_id()
-    create_workspace(repo, run_id, profile, mode, config, create_branch=not args.no_branch)
+    create_workspace(repo, run_id, profile, mode, config, create_branch=args.create_branch)
     if mode != RunMode.READ_ONLY:
         write_durable_docs(repo, run_id, profile, FixationPlan(low_risk=[], gated=[], follow_up=[]), mode, str(config.get("docs_destination", "docs/security")))
     print(f"Initialized target: {repo}")
@@ -339,8 +339,8 @@ def main() -> int:
         subparser.add_argument("--repo", required=True)
         if include_run:
             subparser.add_argument("--run")
-        subparser.add_argument("--mode", choices=[item.value for item in RunMode])
-        subparser.add_argument("--no-branch", action="store_true")
+        subparser.add_argument("--mode", choices=[item.value for item in RunMode], help=argparse.SUPPRESS)
+        subparser.add_argument("--create-branch", action="store_true")
 
     init_parser = subparsers.add_parser("init-target")
     common(init_parser)

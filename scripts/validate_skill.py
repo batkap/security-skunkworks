@@ -20,9 +20,10 @@ def main() -> int:
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
     validator = validator_path()
+    strict = args.strict or os.environ.get("CI", "").lower() == "true"
     if validator is None:
         print("Skill validator not found under $CODEX_HOME/skills/.system/skill-creator/scripts/quick_validate.py")
-        return 1 if args.strict else 0
+        return 1 if strict else 0
     completed = subprocess.run(
         ["python3", str(validator), str(Path(args.repo).resolve())],
         check=False,

@@ -1,0 +1,280 @@
+{
+  "agent_tasks": {
+    "compliance": {
+      "commands": [
+        "security-skunkworks report --repo <REPO_PATH> --run golden-run"
+      ],
+      "completed_at": "<TIMESTAMP>",
+      "dependencies": [
+        "reviewer"
+      ],
+      "owned_paths": [
+        ".security-skunkworks/runs/*/requirements",
+        ".security-skunkworks/runs/*/reports"
+      ],
+      "owner": "unassigned",
+      "role": "compliance",
+      "started_at": "<TIMESTAMP>",
+      "status": "completed",
+      "summary": "Keep the compliance matrix, coverage summary, and framework gap notes current.",
+      "title": "Maintain traceability and control mappings",
+      "updated_at": "<TIMESTAMP>"
+    },
+    "coordinator": {
+      "commands": [
+        "security-skunkworks report --repo <REPO_PATH> --run golden-run",
+        "security-skunkworks verify --repo <REPO_PATH> --run golden-run"
+      ],
+      "completed_at": "<TIMESTAMP>",
+      "dependencies": [],
+      "owned_paths": [
+        ".security-skunkworks"
+      ],
+      "owner": "unassigned",
+      "role": "coordinator",
+      "started_at": "<TIMESTAMP>",
+      "status": "completed",
+      "summary": "Keep sequencing, scanner coverage, branch hygiene, and final completion criteria aligned with the ledger.",
+      "title": "Own the end-to-end run state",
+      "updated_at": "<TIMESTAMP>"
+    },
+    "docs": {
+      "commands": [
+        "security-skunkworks report --repo <REPO_PATH> --run golden-run"
+      ],
+      "completed_at": "",
+      "dependencies": [
+        "reviewer"
+      ],
+      "owned_paths": [
+        "docs/security"
+      ],
+      "owner": "unassigned",
+      "role": "docs",
+      "started_at": "<TIMESTAMP>",
+      "status": "skipped",
+      "summary": "Update README, AGENTS, SECURITY, and security docs only when the selected run mode allows canonical repo writes.",
+      "title": "Maintain durable repo documentation",
+      "updated_at": "<TIMESTAMP>"
+    },
+    "fixer": {
+      "commands": [
+        "security-skunkworks report --repo <REPO_PATH> --run golden-run",
+        "security-skunkworks verify --repo <REPO_PATH> --run golden-run"
+      ],
+      "completed_at": "<TIMESTAMP>",
+      "dependencies": [
+        "reviewer"
+      ],
+      "owned_paths": [
+        ".security-skunkworks/runs/*/plans",
+        ".security-skunkworks/runs/*/reports"
+      ],
+      "owner": "unassigned",
+      "role": "fixer",
+      "started_at": "<TIMESTAMP>",
+      "status": "skipped",
+      "summary": "Do not mutate canonical repo files in read-only mode. Leave sensitive changes as explicit gated items.",
+      "title": "Stage safe remediation guidance and gated proposals",
+      "updated_at": "<TIMESTAMP>"
+    },
+    "reviewer": {
+      "commands": [
+        "security-skunkworks report --repo <REPO_PATH> --run golden-run"
+      ],
+      "completed_at": "<TIMESTAMP>",
+      "dependencies": [
+        "coordinator"
+      ],
+      "owned_paths": [
+        ".security-skunkworks/runs/*/findings",
+        ".security-skunkworks/runs/*/threats"
+      ],
+      "owner": "unassigned",
+      "role": "reviewer",
+      "started_at": "<TIMESTAMP>",
+      "status": "completed",
+      "summary": "Convert repo evidence and scanner output into findings, severity, confidence, and threat inputs.",
+      "title": "Review findings and threat mapping",
+      "updated_at": "<TIMESTAMP>"
+    },
+    "tester": {
+      "commands": [
+        "security-skunkworks verify --repo <REPO_PATH> --run golden-run"
+      ],
+      "completed_at": "<TIMESTAMP>",
+      "dependencies": [
+        "fixer"
+      ],
+      "owned_paths": [
+        ".security-skunkworks/runs/*/requirements",
+        ".security-skunkworks/runs/*/reports"
+      ],
+      "owner": "unassigned",
+      "role": "tester",
+      "started_at": "<TIMESTAMP>",
+      "status": "completed",
+      "summary": "Keep verification commands, scanner status, and requirement coverage aligned with the run state.",
+      "title": "Verify requirements with automated checks",
+      "updated_at": "<TIMESTAMP>"
+    }
+  },
+  "allowed_write_scopes": [
+    ".security-skunkworks"
+  ],
+  "branch": "",
+  "coverage_status": "full",
+  "coverage_summary": [
+    "Supported stack detected for the first trusted release.",
+    "semgrep: ok (0 findings)",
+    "gitleaks: ok (0 findings)",
+    "npm-audit: ok (0 findings)"
+  ],
+  "created_at": "<TIMESTAMP>",
+  "effective_config": {
+    "compliance_frameworks": [
+      "owasp",
+      "asvs",
+      "cwe"
+    ],
+    "default_mode": "read-only",
+    "docs_destination": "docs/security",
+    "exclude_paths": [
+      ".git",
+      "node_modules",
+      ".venv",
+      "venv",
+      "__pycache__",
+      "dist",
+      "build"
+    ],
+    "gate_thresholds": {
+      "default": "gated"
+    },
+    "include_paths": [],
+    "primary_frameworks": [],
+    "required_scanners": {
+      "containers": [
+        "trivy"
+      ],
+      "javascript": [
+        "semgrep",
+        "gitleaks",
+        "npm-audit"
+      ],
+      "python": [
+        "semgrep",
+        "gitleaks",
+        "pip-audit"
+      ],
+      "typescript": [
+        "semgrep",
+        "gitleaks",
+        "npm-audit"
+      ]
+    },
+    "sensitive_paths": []
+  },
+  "findings": [
+    {
+      "category": "security-docs",
+      "confidence": 0.9,
+      "coverage": "full",
+      "dedupe_key": "docs:security-md",
+      "description": "The repository does not define a SECURITY.md disclosure and security posture document.",
+      "evidence_path": "SECURITY.md",
+      "gate": "low-risk",
+      "id": "F-001",
+      "recommendation": "Create SECURITY.md with disclosure, support, and security posture guidance.",
+      "rule_id": "docs.security_md.missing",
+      "severity": "medium",
+      "source": "builtin",
+      "surface": "repo",
+      "title": "Missing SECURITY.md"
+    },
+    {
+      "category": "agent-contract",
+      "confidence": 0.85,
+      "coverage": "full",
+      "dedupe_key": "docs:agents-md",
+      "description": "The repository does not define agent operating rules for resumable security runs.",
+      "evidence_path": "AGENTS.md",
+      "gate": "low-risk",
+      "id": "F-002",
+      "recommendation": "Create AGENTS.md with run-state, gating, and update requirements for specialist agents.",
+      "rule_id": "docs.agents_md.missing",
+      "severity": "low",
+      "source": "builtin",
+      "surface": "repo",
+      "title": "Missing AGENTS.md security operating contract"
+    }
+  ],
+  "gated_findings": [],
+  "mode": "read-only",
+  "repo_path": "<REPO_PATH>",
+  "run_id": "golden-run",
+  "scanners": {
+    "gitleaks": {
+      "available": true,
+      "command": [
+        "gitleaks",
+        "detect",
+        "--no-git",
+        "--source",
+        "<REPO_PATH>",
+        "--report-format",
+        "json",
+        "--report-path",
+        "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/gitleaks.json"
+      ],
+      "coverage_gap": "",
+      "error": "",
+      "executed": true,
+      "findings": [],
+      "name": "gitleaks",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/gitleaks.json",
+      "required": true,
+      "success": true
+    },
+    "npm-audit": {
+      "available": true,
+      "command": [
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "coverage_gap": "",
+      "error": "",
+      "executed": true,
+      "findings": [],
+      "name": "npm-audit",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/npm-audit.json",
+      "required": true,
+      "success": true
+    },
+    "semgrep": {
+      "available": true,
+      "command": [
+        "semgrep",
+        "scan",
+        "--config",
+        "auto",
+        "--json",
+        "--output",
+        "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/semgrep.json",
+        "<REPO_PATH>"
+      ],
+      "coverage_gap": "",
+      "error": "",
+      "executed": true,
+      "findings": [],
+      "name": "semgrep",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/semgrep.json",
+      "required": true,
+      "success": true
+    }
+  },
+  "status": "report_ready",
+  "unsupported_items": [],
+  "updated_at": "<TIMESTAMP>"
+}

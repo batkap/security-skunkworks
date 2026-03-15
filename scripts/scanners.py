@@ -64,6 +64,8 @@ def required_scanner_names(profile: RepoProfile, config: Dict[str, Any]) -> List
     deduped: List[str] = []
     seen = set()
     for name in required:
+        if name == "npm-audit" and "pnpm" in profile.package_managers and "npm" not in profile.package_managers:
+            name = "pnpm-audit"
         if name in seen:
             continue
         deduped.append(name)
@@ -74,6 +76,8 @@ def required_scanner_names(profile: RepoProfile, config: Dict[str, Any]) -> List
 def _scanner_binary(name: str) -> List[str]:
     if name == "npm-audit":
         return ["npm"]
+    if name == "pnpm-audit":
+        return ["pnpm"]
     if name == "pip-audit":
         if shutil.which("pip-audit"):
             return ["pip-audit"]
@@ -289,6 +293,36 @@ def _run_npm_audit(repo: Path, output_path: Path) -> tuple[bool, str]:
     return not errors, "\n".join(f"{project}: {message}" for project, message in errors)
 
 
+def _run_pnpm_audit(repo: Path, output_path: Path) -> tuple[bool, str]:
+    reports = []
+    errors = []
+    for project_dir in _project_dirs(repo, ("pnpm-lock.yaml",)):
+        try:
+            completed = subprocess.run(
+                ["pnpm", "audit", "--json"],
+                cwd=project_dir,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError as exc:
+            errors.append((str(project_dir), str(exc)))
+            continue
+        if completed.stdout.strip():
+            try:
+                payload = json.loads(completed.stdout)
+            except json.JSONDecodeError:
+                payload = {"raw": completed.stdout}
+        else:
+            payload = {}
+        payload["project"] = str(project_dir.relative_to(repo)) or "."
+        reports.append(payload)
+        if completed.returncode not in {0, 1}:
+            errors.append((str(project_dir), completed.stderr.strip() or completed.stdout.strip()))
+    _write_json(output_path, reports)
+    return not errors, "\n".join(f"{project}: {message}" for project, message in errors)
+
+
 def _run_pip_audit(repo: Path, output_path: Path) -> tuple[bool, str]:
     reports = []
     errors = []
@@ -347,6 +381,13 @@ def run_scanners(repo: Path, profile: RepoProfile, config: Dict[str, Any], outpu
         elif name == "npm-audit":
             result.command = ["npm", "audit", "--json"]
             ok, error = _run_npm_audit(repo, output_path)
+            result.executed = True
+            result.success = ok
+            result.error = error if not ok else ""
+            result.findings = [finding.to_dict() for finding in _parse_npm_audit(output_path, "S")]
+        elif name == "pnpm-audit":
+            result.command = ["pnpm", "audit", "--json"]
+            ok, error = _run_pnpm_audit(repo, output_path)
             result.executed = True
             result.success = ok
             result.error = error if not ok else ""

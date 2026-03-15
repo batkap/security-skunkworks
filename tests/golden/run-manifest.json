@@ -1,0 +1,118 @@
+{
+  "allowed_write_scopes": [
+    ".security-skunkworks"
+  ],
+  "branch": "",
+  "coverage_status": "full",
+  "created_at": "<TIMESTAMP>",
+  "effective_config": {
+    "compliance_frameworks": [
+      "owasp",
+      "asvs",
+      "cwe"
+    ],
+    "default_mode": "read-only",
+    "docs_destination": "docs/security",
+    "exclude_paths": [
+      ".git",
+      "node_modules",
+      ".venv",
+      "venv",
+      "__pycache__",
+      "dist",
+      "build"
+    ],
+    "gate_thresholds": {
+      "default": "gated"
+    },
+    "include_paths": [],
+    "primary_frameworks": [],
+    "required_scanners": {
+      "containers": [
+        "trivy"
+      ],
+      "javascript": [
+        "semgrep",
+        "gitleaks",
+        "npm-audit"
+      ],
+      "python": [
+        "semgrep",
+        "gitleaks",
+        "pip-audit"
+      ],
+      "typescript": [
+        "semgrep",
+        "gitleaks",
+        "npm-audit"
+      ]
+    },
+    "sensitive_paths": []
+  },
+  "mode": "read-only",
+  "repo_path": "<REPO_PATH>",
+  "run_id": "golden-run",
+  "scanners": {
+    "gitleaks": {
+      "available": true,
+      "command": [
+        "gitleaks",
+        "detect",
+        "--no-git",
+        "--source",
+        "<REPO_PATH>",
+        "--report-format",
+        "json",
+        "--report-path",
+        "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/gitleaks.json"
+      ],
+      "coverage_gap": "",
+      "error": "",
+      "executed": true,
+      "findings": [],
+      "name": "gitleaks",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/gitleaks.json",
+      "required": true,
+      "success": true
+    },
+    "npm-audit": {
+      "available": true,
+      "command": [
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "coverage_gap": "",
+      "error": "",
+      "executed": true,
+      "findings": [],
+      "name": "npm-audit",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/npm-audit.json",
+      "required": true,
+      "success": true
+    },
+    "semgrep": {
+      "available": true,
+      "command": [
+        "semgrep",
+        "scan",
+        "--config",
+        "auto",
+        "--json",
+        "--output",
+        "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/semgrep.json",
+        "<REPO_PATH>"
+      ],
+      "coverage_gap": "",
+      "error": "",
+      "executed": true,
+      "findings": [],
+      "name": "semgrep",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/semgrep.json",
+      "required": true,
+      "success": true
+    }
+  },
+  "status": "report_ready",
+  "unsupported_items": []
+}
