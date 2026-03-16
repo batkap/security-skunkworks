@@ -1,6 +1,6 @@
 ---
 name: security-skunkworks
-description: Local-first repository security orchestration for JS/TS and Python repos. Use when Codex must assess a local repo, derive threats from code and config, extract security requirements, create resumable run state under .security-skunkworks, coordinate reviewer/fixer/tester/docs/compliance work, and produce a final report plus a detailed fixation plan without mutating canonical repo files by default.
+description: Local-first repository security orchestration for JS/TS, Dart/Flutter, and Python repos. Use when Codex must assess a local repo, derive threats from code and config, extract security requirements, create resumable run state under .security-skunkworks, coordinate reviewer/fixer/tester/docs/compliance work, and produce a final report plus a detailed fixation plan without mutating canonical repo files by default.
 ---
 
 # Security Skunkworks
@@ -29,13 +29,15 @@ Run a resumable security workflow against a local repository. Default to `read-o
 ## Supported First Trusted Release
 
 - JS and TS repos using `npm` or `pnpm`
+- Dart and Flutter repos using `pub`
 - Python repos using `pip` or `setuptools`
 - CI and container surfaces around those repos
 
 Reduced coverage:
 
 - `yarn`, `bun`, `poetry`
-- repos without first-class JS/TS or Python sources
+- repos without first-class JS/TS, Dart/Flutter, or Python sources
+- native Android/iOS/macOS/Linux/Windows host code unless explicitly included
 - mixed repos where unsupported areas affect trust boundaries
 
 ## References
@@ -44,6 +46,7 @@ Reduced coverage:
 - Read [references/scanner-prerequisites.md](references/scanner-prerequisites.md) for required scanner setup.
 - Read [references/support-matrix.md](references/support-matrix.md) for the support boundary.
 - Read [references/copied-repo-pilot.md](references/copied-repo-pilot.md) before pilot runs on real repos.
+- Read [references/dart-flutter-playbook.md](references/dart-flutter-playbook.md) for Flutter repos.
 - Read [references/js-ts-playbook.md](references/js-ts-playbook.md) for JS/TS repos.
 - Read [references/python-playbook.md](references/python-playbook.md) for Python repos.
 - Read [references/compliance-baseline.md](references/compliance-baseline.md) for the default standards baseline.

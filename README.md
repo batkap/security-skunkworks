@@ -1,6 +1,6 @@
 # security-skunkworks
 
-Local-first repository security orchestration for existing JS/TS and Python frontend, backend, and web/API repos.
+Local-first repository security orchestration for existing JS/TS, Dart/Flutter, and Python frontend, backend, and web/API repos.
 
 ## Current Trust Model
 
@@ -17,14 +17,17 @@ Local-first repository security orchestration for existing JS/TS and Python fron
 Supported now:
 
 - JavaScript and TypeScript repos using `npm` or `pnpm`
+- Dart and Flutter repos using `pub`
 - Python repos using `pip` or `setuptools`
 - CI and container surfaces around those repos
+- Mixed Firebase + Flutter + TS repos when the trusted boundary stays inside JS/TS, Dart/Flutter, and first-class security assets
 
 Reduced coverage:
 
 - `yarn`, `bun`, and `poetry`
-- Repos without first-class JS/TS or Python sources
-- Mixed repos where unsupported areas affect the trust boundary
+- Repos without first-class JS/TS, Dart/Flutter, or Python sources
+- Native Android/iOS/macOS/Linux/Windows host code unless those paths are explicitly included
+- Mixed repos where unsupported areas still affect the trust boundary
 
 ## Required Scanners
 
@@ -34,6 +37,7 @@ Install the scanners needed for the repo you are analyzing:
 - `gitleaks`
 - `npm audit` for `npm` repos
 - `pnpm audit` for `pnpm` repos
+- `osv-scanner` for Dart/Flutter repos with `pubspec.lock`
 - `pip-audit` for Python repos
 - `trivy` when Dockerfiles or other container assets are present
 
@@ -117,7 +121,7 @@ security-skunkworks verify --repo /tmp/real-repo-copy --run <run-id>
 - scanner coverage is `full`
 - no gated findings remain
 - the ledger and agent packs agree
-- repo-native test commands pass
+- repo-native test commands pass, including `flutter analyze` and `flutter test` across trusted Flutter roots when present
 
 7. Resume if you need to inspect unfinished work.
 
@@ -176,5 +180,6 @@ python3 scripts/validate_skill.py
 - [references/scanner-prerequisites.md](references/scanner-prerequisites.md)
 - [references/support-matrix.md](references/support-matrix.md)
 - [references/copied-repo-pilot.md](references/copied-repo-pilot.md)
+- [references/dart-flutter-playbook.md](references/dart-flutter-playbook.md)
 - [references/js-ts-playbook.md](references/js-ts-playbook.md)
 - [references/python-playbook.md](references/python-playbook.md)

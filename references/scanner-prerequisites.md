@@ -6,6 +6,7 @@ Install the required external scanners before trusting a run as complete coverag
 - `gitleaks`
 - `npm audit` for `npm` repos
 - `pnpm audit` for `pnpm` repos
+- `osv-scanner` for Dart/Flutter repos with `pubspec.lock`
 - `pip-audit` for Python repos
 - `trivy` when Dockerfiles or other container assets are present
 

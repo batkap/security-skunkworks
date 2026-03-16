@@ -5,6 +5,7 @@ exclude_paths:
   - node_modules
   - .venv
   - venv
+  - .fvm
   - __pycache__
   - dist
   - build
@@ -26,6 +27,10 @@ required_scanners:
     - semgrep
     - gitleaks
     - npm-audit
+  dart:
+    - semgrep
+    - gitleaks
+    - osv-scanner
   python:
     - semgrep
     - gitleaks
