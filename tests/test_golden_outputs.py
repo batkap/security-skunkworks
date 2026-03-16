@@ -39,36 +39,42 @@ def normalize_payload(value, repo: Path, run_dir: Path):
 
 class GoldenOutputTests(unittest.TestCase):
     def test_read_only_run_matches_golden_outputs(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            repo = Path(tmpdir) / "fixture"
-            shutil.copytree(FIXTURES / "js-api-safe", repo)
-            fake_bin = Path(tmpdir) / "bin"
-            fake_bin.mkdir()
-            env = install_fake_scanners(fake_bin, package_manager="npm")
-            result = subprocess.run(
-                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo), "--run", "golden-run"],
-                cwd=ROOT,
-                env=env,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            run_dir = repo / ".security-skunkworks" / "runs" / "golden-run"
-            for json_name in ("run-manifest.json", "ledger.json"):
-                payload = json.loads((run_dir / json_name).read_text(encoding="utf-8"))
-                normalized = normalize_payload(payload, repo, run_dir)
-                expected = json.loads((GOLDEN / json_name).read_text(encoding="utf-8"))
-                self.assertEqual(normalized, expected)
-            for relative_name in (
-                "reports/final-report.md",
-                "plans/fixation-plan.md",
-                "reports/traceability-matrix.md",
-                "reports/compliance-matrix.md",
-            ):
-                actual = (run_dir / relative_name).read_text(encoding="utf-8").rstrip("\n")
-                expected = (GOLDEN / relative_name).read_text(encoding="utf-8").rstrip("\n")
-                self.assertEqual(actual, expected)
+        cases = [
+            ("js-api-safe", "npm", "golden-run", GOLDEN),
+            ("flutter-firebase-pnpm-safe", "pnpm", "flutter-golden", GOLDEN / "flutter"),
+        ]
+        for fixture_name, package_manager, run_name, golden_dir in cases:
+            with self.subTest(fixture=fixture_name):
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    repo = Path(tmpdir) / "fixture"
+                    shutil.copytree(FIXTURES / fixture_name, repo)
+                    fake_bin = Path(tmpdir) / "bin"
+                    fake_bin.mkdir()
+                    env = install_fake_scanners(fake_bin, package_manager=package_manager)
+                    result = subprocess.run(
+                        ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo), "--run", run_name],
+                        cwd=ROOT,
+                        env=env,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    run_dir = repo / ".security-skunkworks" / "runs" / run_name
+                    for json_name in ("run-manifest.json", "ledger.json"):
+                        payload = json.loads((run_dir / json_name).read_text(encoding="utf-8"))
+                        normalized = normalize_payload(payload, repo, run_dir)
+                        expected = json.loads((golden_dir / json_name).read_text(encoding="utf-8"))
+                        self.assertEqual(normalized, expected)
+                    for relative_name in (
+                        "reports/final-report.md",
+                        "plans/fixation-plan.md",
+                        "reports/traceability-matrix.md",
+                        "reports/compliance-matrix.md",
+                    ):
+                        actual = (run_dir / relative_name).read_text(encoding="utf-8").rstrip("\n")
+                        expected = (golden_dir / relative_name).read_text(encoding="utf-8").rstrip("\n")
+                        self.assertEqual(actual, expected)
 
 
 if __name__ == "__main__":

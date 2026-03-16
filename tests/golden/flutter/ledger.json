@@ -2,7 +2,7 @@
   "agent_tasks": {
     "compliance": {
       "commands": [
-        "security-skunkworks report --repo <REPO_PATH> --run golden-run"
+        "security-skunkworks report --repo <REPO_PATH> --run flutter-golden"
       ],
       "completed_at": "<TIMESTAMP>",
       "dependencies": [
@@ -22,8 +22,8 @@
     },
     "coordinator": {
       "commands": [
-        "security-skunkworks report --repo <REPO_PATH> --run golden-run",
-        "security-skunkworks verify --repo <REPO_PATH> --run golden-run"
+        "security-skunkworks report --repo <REPO_PATH> --run flutter-golden",
+        "security-skunkworks verify --repo <REPO_PATH> --run flutter-golden"
       ],
       "completed_at": "<TIMESTAMP>",
       "dependencies": [],
@@ -40,7 +40,7 @@
     },
     "docs": {
       "commands": [
-        "security-skunkworks report --repo <REPO_PATH> --run golden-run"
+        "security-skunkworks report --repo <REPO_PATH> --run flutter-golden"
       ],
       "completed_at": "",
       "dependencies": [
@@ -59,8 +59,8 @@
     },
     "fixer": {
       "commands": [
-        "security-skunkworks report --repo <REPO_PATH> --run golden-run",
-        "security-skunkworks verify --repo <REPO_PATH> --run golden-run"
+        "security-skunkworks report --repo <REPO_PATH> --run flutter-golden",
+        "security-skunkworks verify --repo <REPO_PATH> --run flutter-golden"
       ],
       "completed_at": "<TIMESTAMP>",
       "dependencies": [
@@ -80,7 +80,7 @@
     },
     "reviewer": {
       "commands": [
-        "security-skunkworks report --repo <REPO_PATH> --run golden-run"
+        "security-skunkworks report --repo <REPO_PATH> --run flutter-golden"
       ],
       "completed_at": "<TIMESTAMP>",
       "dependencies": [
@@ -100,7 +100,7 @@
     },
     "tester": {
       "commands": [
-        "security-skunkworks verify --repo <REPO_PATH> --run golden-run"
+        "security-skunkworks verify --repo <REPO_PATH> --run flutter-golden"
       ],
       "completed_at": "<TIMESTAMP>",
       "dependencies": [
@@ -125,10 +125,11 @@
   "branch": "",
   "coverage_status": "full",
   "coverage_summary": [
-    "Trusted boundary covers: .",
+    "Trusted boundary covers: ., functions, packages/cache. Standard native host paths are excluded from trusted verification: android, ios.",
     "semgrep: ok (0 findings)",
     "gitleaks: ok (0 findings)",
-    "npm-audit: ok (0 findings)"
+    "osv-scanner: ok (0 findings)",
+    "pnpm-audit: ok (0 findings)"
   ],
   "created_at": "<TIMESTAMP>",
   "effective_config": {
@@ -181,7 +182,10 @@
     },
     "sensitive_paths": []
   },
-  "excluded_host_paths": [],
+  "excluded_host_paths": [
+    "android",
+    "ios"
+  ],
   "findings": [
     {
       "category": "security-docs",
@@ -219,7 +223,7 @@
   "gated_findings": [],
   "mode": "read-only",
   "repo_path": "<REPO_PATH>",
-  "run_id": "golden-run",
+  "run_id": "flutter-golden",
   "scanners": {
     "gitleaks": {
       "available": true,
@@ -232,21 +236,41 @@
         "--report-format",
         "json",
         "--report-path",
-        "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/gitleaks.json"
+        "<REPO_PATH>/.security-skunkworks/runs/flutter-golden/findings/scanners/gitleaks.json"
       ],
       "coverage_gap": "",
       "error": "",
       "executed": true,
       "findings": [],
       "name": "gitleaks",
-      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/gitleaks.json",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/flutter-golden/findings/scanners/gitleaks.json",
       "required": true,
       "success": true
     },
-    "npm-audit": {
+    "osv-scanner": {
       "available": true,
       "command": [
-        "npm",
+        "osv-scanner",
+        "scan",
+        "source",
+        "--format",
+        "json",
+        "--lockfile=<REPO_PATH>/pubspec.lock",
+        "--lockfile=<REPO_PATH>/packages/cache/pubspec.lock"
+      ],
+      "coverage_gap": "",
+      "error": "",
+      "executed": true,
+      "findings": [],
+      "name": "osv-scanner",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/flutter-golden/findings/scanners/osv-scanner.json",
+      "required": true,
+      "success": true
+    },
+    "pnpm-audit": {
+      "available": true,
+      "command": [
+        "pnpm",
         "audit",
         "--json"
       ],
@@ -254,8 +278,8 @@
       "error": "",
       "executed": true,
       "findings": [],
-      "name": "npm-audit",
-      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/npm-audit.json",
+      "name": "pnpm-audit",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/flutter-golden/findings/scanners/pnpm-audit.json",
       "required": true,
       "success": true
     },
@@ -268,7 +292,7 @@
         "auto",
         "--json",
         "--output",
-        "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/semgrep.json",
+        "<REPO_PATH>/.security-skunkworks/runs/flutter-golden/findings/scanners/semgrep.json",
         "--exclude",
         ".git",
         "--exclude",
@@ -286,6 +310,10 @@
         "--exclude",
         "build",
         "--exclude",
+        "android",
+        "--exclude",
+        "ios",
+        "--exclude",
         ".security-skunkworks",
         "--exclude",
         "ios/Flutter/ephemeral",
@@ -302,15 +330,17 @@
       "executed": true,
       "findings": [],
       "name": "semgrep",
-      "output_path": "<REPO_PATH>/.security-skunkworks/runs/golden-run/findings/scanners/semgrep.json",
+      "output_path": "<REPO_PATH>/.security-skunkworks/runs/flutter-golden/findings/scanners/semgrep.json",
       "required": true,
       "success": true
     }
   },
   "status": "report_ready",
-  "support_reason": "Trusted boundary covers: .",
+  "support_reason": "Trusted boundary covers: ., functions, packages/cache. Standard native host paths are excluded from trusted verification: android, ios.",
   "supported_roots": [
-    "."
+    ".",
+    "functions",
+    "packages/cache"
   ],
   "unsupported_items": [],
   "updated_at": "<TIMESTAMP>"

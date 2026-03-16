@@ -3,13 +3,12 @@
 - Repository: `fixture`
 
 ## Coverage Summary
-- Supported stack detected for the first trusted release.
+- Trusted boundary covers: .
 - semgrep: ok (0 findings)
 - gitleaks: ok (0 findings)
 - npm-audit: ok (0 findings)
 
 ## Scanner Summary
-- Supported stack detected for the first trusted release.
 - semgrep: ok (0 findings)
 - gitleaks: ok (0 findings)
 - npm-audit: ok (0 findings)

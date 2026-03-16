@@ -165,6 +165,39 @@ class CliTests(unittest.TestCase):
             self.assertNotEqual(verify.returncode, 0)
             self.assertIn("report_ready", verify.stdout)
 
+    def test_mixed_flutter_repo_can_reach_report_ready_and_verify(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = Path(tmpdir) / "fixture"
+            shutil.copytree(FIXTURES / "flutter-firebase-pnpm-safe", repo)
+            fake_bin = Path(tmpdir) / "bin"
+            fake_bin.mkdir()
+            env = install_fake_scanners(fake_bin, package_manager="pnpm")
+            result = subprocess.run(
+                ["python3", "-m", "scripts.security_workflow", "run", "--repo", str(repo), "--run", "flutter-run"],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            run_dir = repo / ".security-skunkworks" / "runs" / "flutter-run"
+            ledger = json.loads((run_dir / "ledger.json").read_text(encoding="utf-8"))
+            self.assertEqual(ledger["status"], "report_ready")
+            self.assertEqual(ledger["coverage_status"], "full")
+            self.assertEqual(sorted(ledger["scanners"]), ["gitleaks", "osv-scanner", "pnpm-audit", "semgrep"])
+            self.assertIn("packages/cache", ledger["supported_roots"])
+            self.assertIn("android", ledger["excluded_host_paths"])
+            verify = subprocess.run(
+                ["python3", "-m", "scripts.security_workflow", "verify", "--repo", str(repo), "--run", "flutter-run"],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(verify.returncode, 0, verify.stdout + verify.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

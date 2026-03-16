@@ -1,0 +1,7 @@
+workflows:
+  security:
+    scripts:
+      - semgrep scan --config auto .
+      - gitleaks detect --no-git
+      - pnpm audit --json
+      - osv-scanner scan source --format json --lockfile=pubspec.lock

@@ -1,0 +1,7 @@
+{
+  "name": "flutter-firebase-pnpm-safe",
+  "private": true,
+  "scripts": {
+    "test": "echo ok"
+  }
+}

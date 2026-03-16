@@ -25,6 +25,27 @@ class AnalyzerTests(unittest.TestCase):
         self.assertFalse(profile.supported)
         self.assertTrue(profile.unsupported_items)
 
+    def test_mixed_flutter_firebase_repo_uses_trusted_boundary(self) -> None:
+        profile = build_repo_profile(FIXTURES / "flutter-firebase-pnpm-safe")
+        self.assertTrue(profile.supported)
+        self.assertEqual(profile.unsupported_items, [])
+        self.assertIn("dart", profile.languages)
+        self.assertIn("typescript", profile.languages)
+        self.assertIn("pub", profile.package_managers)
+        self.assertIn("pnpm", profile.package_managers)
+        self.assertIn("android", profile.excluded_host_paths)
+        self.assertIn("ios", profile.excluded_host_paths)
+        self.assertIn("packages/cache", profile.supported_roots)
+
+    def test_risky_flutter_fixture_detects_dart_findings(self) -> None:
+        findings = findings_for_repo(FIXTURES / "flutter-firebase-pnpm-risky")
+        categories = {finding.category for finding in findings}
+        titles = {finding.title for finding in findings}
+        self.assertIn("client-integrity", categories)
+        self.assertIn("session-management", categories)
+        self.assertIn("network-security", categories)
+        self.assertIn("Flutter entrypoint does not activate Firebase App Check", titles)
+
 
 if __name__ == "__main__":
     unittest.main()

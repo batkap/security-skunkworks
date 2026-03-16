@@ -64,6 +64,62 @@ def install_fake_scanners(bin_dir: Path, package_manager: str = "npm") -> dict[s
             """
         ),
     )
+    fake_scanner_bin(
+        bin_dir,
+        "osv-scanner",
+        textwrap.dedent(
+            """\
+            #!/bin/sh
+            mode="${OSV_SCANNER_MODE:-clean}"
+            if [ "$mode" = "vuln" ]; then
+              printf '%s\n' '{"results":[{"source":{"path":"pubspec.lock"},"packages":[{"package":{"name":"http"},"vulnerabilities":[{"id":"OSV-2026-0001","summary":"Critical advisory for http","database_specific":{"severity":"HIGH"}}],"groups":[{"ids":["OSV-2026-0001"]}]}]}]}'
+              exit "${OSV_SCANNER_EXIT_CODE:-1}"
+            fi
+            printf '{"results":[]}\n'
+            exit "${OSV_SCANNER_EXIT_CODE:-0}"
+            """
+        ),
+    )
+    fake_scanner_bin(
+        bin_dir,
+        "flutter",
+        textwrap.dedent(
+            """\
+            #!/bin/sh
+            if [ "$1" = "analyze" ] || [ "$1" = "test" ]; then
+              exit 0
+            fi
+            exit 0
+            """
+        ),
+    )
+    fake_scanner_bin(
+        bin_dir,
+        "fvm",
+        textwrap.dedent(
+            """\
+            #!/bin/sh
+            if [ "$1" = "flutter" ]; then
+              shift
+              exec flutter "$@"
+            fi
+            exit 0
+            """
+        ),
+    )
+    fake_scanner_bin(
+        bin_dir,
+        "dart",
+        textwrap.dedent(
+            """\
+            #!/bin/sh
+            if [ "$1" = "analyze" ] || [ "$1" = "test" ]; then
+              exit 0
+            fi
+            exit 0
+            """
+        ),
+    )
     env = dict(os.environ)
     env["PATH"] = f"{bin_dir}:{env['PATH']}"
     return env

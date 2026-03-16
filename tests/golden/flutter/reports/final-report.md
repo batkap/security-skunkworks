@@ -2,28 +2,33 @@
 
 - Repository: `fixture`
 - Mode: `read-only`
-- Maturity: `none`
+- Maturity: `established`
 - Coverage Status: `full`
 
 ## Trusted Boundary
-Trusted boundary covers: .
+Trusted boundary covers: ., functions, packages/cache. Standard native host paths are excluded from trusted verification: android, ios.
 
 ### Supported Roots
 - .
+- functions
+- packages/cache
 
 ### Excluded Native Host Paths
-- none
+- android
+- ios
 
 ## Coverage Summary
-- Trusted boundary covers: .
+- Trusted boundary covers: ., functions, packages/cache. Standard native host paths are excluded from trusted verification: android, ios.
 - semgrep: ok (0 findings)
 - gitleaks: ok (0 findings)
-- npm-audit: ok (0 findings)
+- osv-scanner: ok (0 findings)
+- pnpm-audit: ok (0 findings)
 
 ## Scanner Summary
 - semgrep: ok (0 findings)
 - gitleaks: ok (0 findings)
-- npm-audit: ok (0 findings)
+- osv-scanner: ok (0 findings)
+- pnpm-audit: ok (0 findings)
 
 ## Unsupported Or Reduced-Coverage Areas
 - none

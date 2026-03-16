@@ -1,0 +1,10 @@
+name: flutter_firebase_pnpm_risky
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.0.0
+flutter:
+  uses-material-design: true
