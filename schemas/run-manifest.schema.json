@@ -37,6 +37,15 @@
       "type": "array",
       "items": {"type": "string"}
     },
+    "supported_roots": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "excluded_host_paths": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "support_reason": {"type": "string"},
     "effective_config": {"type": "object"},
     "scanners": {"type": "object"}
   },

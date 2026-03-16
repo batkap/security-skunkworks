@@ -5,6 +5,15 @@
 - Maturity: `${maturity}`
 - Coverage Status: `${coverage_status}`
 
+## Trusted Boundary
+${support_reason}
+
+### Supported Roots
+${supported_roots}
+
+### Excluded Native Host Paths
+${excluded_host_paths}
+
 ## Coverage Summary
 ${coverage_summary}
 

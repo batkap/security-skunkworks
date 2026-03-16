@@ -121,6 +121,9 @@ def create_workspace(
         coverage_status=CoverageStatus.PARTIAL,
         allowed_write_scopes=allowed_write_scopes(mode, str(effective_config.get("docs_destination", "docs/security"))),
         unsupported_items=list(profile.unsupported_items),
+        supported_roots=list(profile.supported_roots),
+        excluded_host_paths=list(profile.excluded_host_paths),
+        support_reason=profile.support_reason,
         effective_config=effective_config,
     )
     write_json(
@@ -135,6 +138,9 @@ def create_workspace(
             "allowed_write_scopes": ledger.allowed_write_scopes,
             "coverage_status": ledger.coverage_status.value,
             "unsupported_items": profile.unsupported_items,
+            "supported_roots": profile.supported_roots,
+            "excluded_host_paths": profile.excluded_host_paths,
+            "support_reason": profile.support_reason,
             "effective_config": effective_config,
             "scanners": {},
         },
@@ -303,6 +309,8 @@ def write_reports(
         f"- `{finding.id}` {finding.severity.value}: {finding.title} ({finding.evidence_path}) [{finding.source}/{finding.rule_id or 'n/a'}]"
         for finding in findings_list
     ) or "- none"
+    supported_roots = "\n".join(f"- {item}" for item in profile.supported_roots) or "- ."
+    excluded_host_paths = "\n".join(f"- {item}" for item in profile.excluded_host_paths) or "- none"
     (run_dir / "reports" / "final-report.md").write_text(
         render_template(
             "final-report.md",
@@ -310,6 +318,9 @@ def write_reports(
             mode=mode.value,
             maturity=profile.maturity,
             coverage_status=coverage_status.value,
+            support_reason=profile.support_reason,
+            supported_roots=supported_roots,
+            excluded_host_paths=excluded_host_paths,
             findings=findings_markdown,
             low_risk="\n".join(f"- {item}" for item in fixation_plan.low_risk) or "- none",
             gated="\n".join(f"- {item}" for item in fixation_plan.gated) or "- none",

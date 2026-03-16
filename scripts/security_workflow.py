@@ -127,13 +127,25 @@ def final_run_status(coverage_status: CoverageStatus, findings: Sequence[Finding
 
 
 def coverage_summary(profile, scanner_results: Dict[str, object]) -> List[str]:
-    lines = []
-    if profile.supported:
-        lines.append("Supported stack detected for the first trusted release.")
-    else:
-        lines.append("Coverage is reduced because the repo is outside the first trusted release support matrix.")
+    lines = [profile.support_reason or ("Supported stack detected for the first trusted release." if profile.supported else "Coverage is reduced because the repo is outside the first trusted release support matrix.")]
     if not scanner_results:
         lines.append("No required scanners were selected for this repo.")
+    for name, result in scanner_results.items():
+        if not result.available:
+            lines.append(f"{name}: missing")
+        elif not result.executed:
+            lines.append(f"{name}: not executed")
+        elif not result.success:
+            lines.append(f"{name}: failed")
+        else:
+            lines.append(f"{name}: ok ({len(result.findings)} findings)")
+    return lines
+
+
+def scanner_summary_lines(scanner_results: Dict[str, object]) -> List[str]:
+    lines = []
+    if not scanner_results:
+        return ["No required scanners were selected for this repo."]
     for name, result in scanner_results.items():
         if not result.available:
             lines.append(f"{name}: missing")
@@ -175,6 +187,7 @@ def run_command(args: argparse.Namespace) -> int:
     docs_destination = str(config.get("docs_destination", "docs/security"))
     tasks = build_agent_tasks(run_id, findings, str(repo), mode, docs_destination, status)
     summary_lines = coverage_summary(profile, scanner_results)
+    scanner_lines = scanner_summary_lines(scanner_results)
     ledger = RunLedger(
         run_id=run_id,
         repo_path=str(repo),
@@ -188,6 +201,9 @@ def run_command(args: argparse.Namespace) -> int:
         scanners={name: result.to_dict() for name, result in scanner_results.items()},
         allowed_write_scopes=[".security-skunkworks"] if mode == RunMode.READ_ONLY else [".security-skunkworks", "README.md", "AGENTS.md", "SECURITY.md", docs_destination],
         unsupported_items=list(profile.unsupported_items),
+        supported_roots=list(profile.supported_roots),
+        excluded_host_paths=list(profile.excluded_host_paths),
+        support_reason=profile.support_reason,
         coverage_summary=summary_lines,
         effective_config=config,
     )
@@ -204,6 +220,9 @@ def run_command(args: argparse.Namespace) -> int:
             "allowed_write_scopes": ledger.allowed_write_scopes,
             "coverage_status": coverage_status.value,
             "unsupported_items": profile.unsupported_items,
+            "supported_roots": profile.supported_roots,
+            "excluded_host_paths": profile.excluded_host_paths,
+            "support_reason": profile.support_reason,
             "effective_config": config,
             "scanners": ledger.scanners,
         },
@@ -225,7 +244,7 @@ def run_command(args: argparse.Namespace) -> int:
             + "\n".join(f"- `{finding.id}` {finding.severity.value}: {finding.title}" for finding in findings),
             encoding="utf-8",
         )
-    scanner_summary = "\n".join(f"- {line}" for line in summary_lines) or "- none"
+    scanner_summary = "\n".join(f"- {line}" for line in scanner_lines) or "- none"
     unsupported_summary = "\n".join(f"- {item}" for item in profile.unsupported_items) or "- none"
     write_reports(
         paths["run_dir"],
@@ -305,6 +324,8 @@ def resume_command(args: argparse.Namespace) -> int:
                 "coverage_status": ledger_data.get("coverage_status"),
                 "pending": pending,
                 "unsupported_items": ledger_data.get("unsupported_items", []),
+                "supported_roots": ledger_data.get("supported_roots", []),
+                "excluded_host_paths": ledger_data.get("excluded_host_paths", []),
             },
             indent=2,
         )

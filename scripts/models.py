@@ -102,6 +102,9 @@ class RepoProfile:
     package_managers: List[str] = field(default_factory=list)
     supported: bool = True
     unsupported_items: List[str] = field(default_factory=list)
+    supported_roots: List[str] = field(default_factory=list)
+    excluded_host_paths: List[str] = field(default_factory=list)
+    support_reason: str = ""
 
     def to_dict(self) -> Dict[str, object]:
         return asdict(self)
@@ -330,6 +333,9 @@ class RunLedger:
     scanners: Dict[str, Dict[str, object]] = field(default_factory=dict)
     allowed_write_scopes: List[str] = field(default_factory=list)
     unsupported_items: List[str] = field(default_factory=list)
+    supported_roots: List[str] = field(default_factory=list)
+    excluded_host_paths: List[str] = field(default_factory=list)
+    support_reason: str = ""
     coverage_summary: List[str] = field(default_factory=list)
     effective_config: Dict[str, object] = field(default_factory=dict)
 

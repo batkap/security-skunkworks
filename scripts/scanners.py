@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -14,10 +15,26 @@ IGNORED_DIRS = {
     "node_modules",
     ".venv",
     "venv",
+    ".fvm",
     "__pycache__",
     "dist",
     "build",
     ".dart_tool",
+}
+
+SEMGRP_EXCLUDES = [
+    ".security-skunkworks",
+    "ios/Flutter/ephemeral",
+    "**/GeneratedPluginRegistrant.java",
+    "**/GeneratedPluginRegistrant.m",
+    "**/GeneratedPluginRegistrant.h",
+]
+
+SEVERITY_RANK = {
+    Severity.LOW: 1,
+    Severity.MEDIUM: 2,
+    Severity.HIGH: 3,
+    Severity.CRITICAL: 4,
 }
 
 
@@ -52,6 +69,73 @@ def _project_dirs(repo: Path, markers: Sequence[str]) -> List[Path]:
         seen.add(value)
         unique.append(item)
     return unique
+
+
+def _repo_relative(path: Path, repo: Path) -> str:
+    try:
+        return str(path.relative_to(repo)) or "."
+    except ValueError:
+        return str(path)
+
+
+def _scanner_roots(repo: Path, profile: RepoProfile) -> List[Path]:
+    roots = []
+    if profile.supported_roots:
+        for item in profile.supported_roots:
+            roots.append(repo if item in {"", "."} else repo / item)
+    else:
+        roots.append(repo)
+    unique: List[Path] = []
+    seen = set()
+    for root in sorted(roots, key=lambda value: (_repo_relative(value, repo), len(str(value)))):
+        if not root.exists():
+            continue
+        value = str(root.resolve())
+        if value in seen:
+            continue
+        seen.add(value)
+        unique.append(root)
+    return unique
+
+
+def _trusted_project_dirs(repo: Path, profile: RepoProfile, markers: Sequence[str]) -> List[Path]:
+    found: List[Path] = []
+    for root in _scanner_roots(repo, profile):
+        for marker in markers:
+            if (root / marker).exists():
+                found.append(root)
+                break
+        for path in root.rglob("*"):
+            if any(part in IGNORED_DIRS for part in path.parts):
+                continue
+            if not path.is_dir():
+                continue
+            if any((path / marker).exists() for marker in markers):
+                found.append(path)
+    unique: List[Path] = []
+    seen = set()
+    for item in sorted(found, key=lambda value: _repo_relative(value, repo)):
+        value = str(item.resolve())
+        if value in seen:
+            continue
+        seen.add(value)
+        unique.append(item)
+    return unique
+
+
+def _lockfiles(repo: Path, profile: RepoProfile, name: str) -> List[Path]:
+    files: List[Path] = []
+    seen = set()
+    for root in _trusted_project_dirs(repo, profile, (name.replace(".lock", ".yaml"), name) if name == "pubspec.lock" else (name,)):
+        candidate = root / name
+        if not candidate.exists():
+            continue
+        value = str(candidate.resolve())
+        if value in seen:
+            continue
+        seen.add(value)
+        files.append(candidate)
+    return files
 
 
 def required_scanner_names(profile: RepoProfile, config: Dict[str, Any]) -> List[str]:
@@ -102,6 +186,23 @@ def _run_json_command(command: List[str], cwd: Path, output_path: Path | None = 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(completed.stdout, encoding="utf-8")
     return completed.returncode == 0, output
+
+
+def _run_json_command_with_codes(
+    command: List[str],
+    cwd: Path,
+    output_path: Path | None = None,
+    success_codes: Iterable[int] = (0,),
+) -> tuple[bool, str]:
+    try:
+        completed = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
+    except OSError as exc:
+        return False, str(exc)
+    output = (completed.stdout + "\n" + completed.stderr).strip()
+    if output_path is not None and completed.stdout.strip():
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(completed.stdout, encoding="utf-8")
+    return completed.returncode in set(success_codes), output
 
 
 def _parse_semgrep(path: Path, prefix: str) -> List[Finding]:
@@ -258,6 +359,111 @@ def _parse_trivy(path: Path, prefix: str) -> List[Finding]:
     return findings
 
 
+def _float_score(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        return None
+    match = re.search(r"\b(\d+(?:\.\d+)?)\b", value)
+    if not match:
+        return None
+    return float(match.group(1))
+
+
+def _severity_from_score(score: float) -> Severity:
+    if score >= 9.0:
+        return Severity.CRITICAL
+    if score >= 7.0:
+        return Severity.HIGH
+    if score >= 4.0:
+        return Severity.MEDIUM
+    return Severity.LOW
+
+
+def _osv_vulnerability_severity(vulnerability: Dict[str, Any]) -> Severity:
+    scores: List[float] = []
+    text_values: List[str] = []
+    for item in vulnerability.get("severity", []) or []:
+        if not isinstance(item, dict):
+            continue
+        score = _float_score(item.get("score"))
+        if score is not None:
+            scores.append(score)
+    database_specific = vulnerability.get("database_specific", {})
+    if isinstance(database_specific, dict):
+        if isinstance(database_specific.get("severity"), str):
+            text_values.append(database_specific["severity"])
+        cvss = database_specific.get("cvss", {})
+        if isinstance(cvss, dict):
+            for key in ("score", "baseScore", "base_score"):
+                score = _float_score(cvss.get(key))
+                if score is not None:
+                    scores.append(score)
+    ecosystem_specific = vulnerability.get("ecosystem_specific", {})
+    if isinstance(ecosystem_specific, dict) and isinstance(ecosystem_specific.get("severity"), str):
+        text_values.append(ecosystem_specific["severity"])
+    if scores:
+        return _severity_from_score(max(scores))
+    for value in text_values:
+        return _severity_from_text(value)
+    return Severity.MEDIUM
+
+
+def _parse_osv_scanner(path: Path, repo: Path, prefix: str) -> List[Finding]:
+    if not path.exists():
+        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    findings: List[Finding] = []
+    index = 1
+    for result in payload.get("results", []):
+        source = result.get("source", {})
+        source_path = source.get("path", "pubspec.lock")
+        try:
+            evidence_path = str(Path(source_path).resolve().relative_to(repo.resolve()))
+        except ValueError:
+            evidence_path = str(source_path)
+        for package_entry in result.get("packages", []):
+            package_info = package_entry.get("package", {})
+            package_name = str(package_info.get("name", "unknown"))
+            vulnerabilities = {
+                str(item.get("id")): item
+                for item in package_entry.get("vulnerabilities", [])
+                if isinstance(item, dict) and item.get("id")
+            }
+            groups = package_entry.get("groups", []) or [{"ids": list(vulnerabilities)}]
+            for group in groups:
+                if not isinstance(group, dict):
+                    continue
+                ids = [str(item) for item in group.get("ids", []) if str(item)]
+                related = [vulnerabilities[item] for item in ids if item in vulnerabilities]
+                if not related and vulnerabilities:
+                    related = list(vulnerabilities.values())
+                primary = related[0] if related else {}
+                severity = max((_osv_vulnerability_severity(item) for item in related), default=Severity.MEDIUM, key=lambda value: SEVERITY_RANK[value])
+                title = f"Dependency vulnerability in {package_name}"
+                description = str(primary.get("summary") or primary.get("details") or (ids[0] if ids else "osv-scanner reported a vulnerability."))
+                rule_id = ids[0] if ids else str(primary.get("id", package_name))
+                findings.append(
+                    Finding(
+                        id=f"{prefix}-OSV-{index:03d}",
+                        title=title,
+                        severity=severity,
+                        confidence=0.85,
+                        category="dependency-audit",
+                        description=description,
+                        evidence_path=evidence_path,
+                        gate="gated" if severity in {Severity.CRITICAL, Severity.HIGH} else "low-risk",
+                        recommendation="Upgrade the affected Dart or Flutter dependency to a fixed version and re-run osv-scanner.",
+                        source="osv-scanner",
+                        rule_id=rule_id,
+                        surface="dependencies",
+                        dedupe_key=f"osv-scanner:{evidence_path}:{package_name}:{rule_id}",
+                    )
+                )
+                index += 1
+    return findings
+
+
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -349,6 +555,16 @@ def _run_pip_audit(repo: Path, output_path: Path) -> tuple[bool, str]:
     return not errors, "\n".join(f"{project}: {message}" for project, message in errors)
 
 
+def _run_osv_scanner(repo: Path, profile: RepoProfile, output_path: Path) -> tuple[bool, str, List[str]]:
+    lockfiles = _lockfiles(repo, profile, "pubspec.lock")
+    if not lockfiles:
+        return False, "No pubspec.lock files were found inside the trusted Dart boundary.", []
+    command = ["osv-scanner", "scan", "source", "--format", "json"]
+    command.extend([f"--lockfile={path}" for path in lockfiles])
+    ok, output = _run_json_command_with_codes(command, repo, output_path=output_path, success_codes=(0, 1))
+    return ok, output, command
+
+
 def run_scanners(repo: Path, profile: RepoProfile, config: Dict[str, Any], output_dir: Path, run_id: str) -> Dict[str, ScannerResult]:
     del run_id
     results: Dict[str, ScannerResult] = {}
@@ -363,7 +579,11 @@ def run_scanners(repo: Path, profile: RepoProfile, config: Dict[str, Any], outpu
             results[name] = result
             continue
         if name == "semgrep":
-            full_command = ["semgrep", "scan", "--config", "auto", "--json", "--output", str(output_path), str(repo)]
+            exclude_paths = list(dict.fromkeys([*(config.get("exclude_paths") or []), *profile.excluded_host_paths, *SEMGRP_EXCLUDES]))
+            full_command = ["semgrep", "scan", "--config", "auto", "--json", "--output", str(output_path)]
+            for item in exclude_paths:
+                full_command.extend(["--exclude", item])
+            full_command.append(str(repo))
             ok, error = _run_json_command(full_command, repo)
             result.command = full_command
             result.executed = True
@@ -399,6 +619,13 @@ def run_scanners(repo: Path, profile: RepoProfile, config: Dict[str, Any], outpu
             result.success = ok
             result.error = error if not ok else ""
             result.findings = [finding.to_dict() for finding in _parse_pip_audit(output_path, "S")]
+        elif name == "osv-scanner":
+            ok, error, full_command = _run_osv_scanner(repo, profile, output_path)
+            result.command = full_command or ["osv-scanner", "scan", "source", "--format", "json"]
+            result.executed = bool(full_command)
+            result.success = ok
+            result.error = error if not ok else ""
+            result.findings = [finding.to_dict() for finding in _parse_osv_scanner(output_path, repo, "S")]
         elif name == "trivy":
             full_command = ["trivy", "fs", "--format", "json", "--output", str(output_path), str(repo)]
             ok, error = _run_json_command(full_command, repo)

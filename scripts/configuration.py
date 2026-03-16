@@ -21,6 +21,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "node_modules",
         ".venv",
         "venv",
+        ".fvm",
         "__pycache__",
         "dist",
         "build",
@@ -35,6 +36,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "required_scanners": {
         "javascript": ["semgrep", "gitleaks", "npm-audit"],
         "typescript": ["semgrep", "gitleaks", "npm-audit"],
+        "dart": ["semgrep", "gitleaks", "osv-scanner"],
         "python": ["semgrep", "gitleaks", "pip-audit"],
         "containers": ["trivy"],
     },
